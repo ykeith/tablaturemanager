@@ -1,12 +1,10 @@
-
-package tablaturesmanager;
 import java.awt.List;
 import java.util.ArrayList;
 
 /**
  *@author Keith Yves
- *@comment Cette classe permet d'empiler et dépiler
- * un objet de façon générique <E> (exemple : Mouton, Moto, int, String, ...)
+ *@comment Cette classe permet d'empiler et dï¿½piler
+ * un objet de faï¿½on gï¿½nï¿½rique <E> (exemple : Mouton, Moto, int, String, ...)
  * et en plus en pouvant modifier la taille du tableau (ArrayList)
  *@version 1.0 - 30/01/2008
  */
@@ -30,8 +28,8 @@ public class Pile<E> {
         
     /**
      *@param int (l'index voulu)
-     *@return un objet du même type que notre ArrayList(E)
-     *@comment Accesseur pour obtenir l'objet contenu à l'index passé en paramétre
+     *@return un objet du mï¿½me type que notre ArrayList(E)
+     *@comment Accesseur pour obtenir l'objet contenu ï¿½ l'index passï¿½ en paramï¿½tre
      */
     public E get(int _i){
         if ( _i <= getSize() ){
@@ -42,7 +40,7 @@ public class Pile<E> {
 
     /**
      *@param int
-     *@comment Empile à la derniére place de la pile notre élément passé en paramétre
+     *@comment Empile ï¿½ la derniï¿½re place de la pile notre ï¿½lï¿½ment passï¿½ en paramï¿½tre
      */
     public void empiler(E _n){
         elements.add(_n);
@@ -50,18 +48,18 @@ public class Pile<E> {
 
     /**
      *@return int
-     *@comment Depile le dernier élément de la pile
+     *@comment Depile le dernier ï¿½lï¿½ment de la pile
      */
     public E depiler(){
             if(!elements.isEmpty()){ //Si la pile n'est pas vide
-                    return elements.remove(elements.size()-1); //On retourne le dernier élément
+                    return elements.remove(elements.size()-1); //On retourne le dernier ï¿½lï¿½ment
             }
-            else return null; //On retourne un élément improbable
+            else return null; //On retourne un ï¿½lï¿½ment improbable
     }
 
     /**
      *@param int
-     *@comment Supprime l'élément à l'index donné
+     *@comment Supprime l'ï¿½lï¿½ment ï¿½ l'index donnï¿½
      */
     public void remove(int _index){
         elements.remove(_index);
@@ -70,15 +68,15 @@ public class Pile<E> {
     /*
      *@author yk
      *@date 12/03/2008
-     *@comment Cette méthode tri la collection et y retire les doublons
+     *@comment Cette mï¿½thode tri la collection et y retire les doublons
      */
     public void sort(){
-        // Pour chaque objet dans la collection on vérifie qu'aucun autre objet de la collection ne lui ai égale plus d'une fois
+        // Pour chaque objet dans la collection on vï¿½rifie qu'aucun autre objet de la collection ne lui ai ï¿½gale plus d'une fois
         int nbCorrespond = 0;
         for (int i=getSize(); i>0; i--){ //Boucle sur la collection
             for ( int j=getSize(); j>0; j--){ //Nouvelle boucle sur la collection
                 if(i < getSize() && j < getSize()){
-                    if( get(i).equals(get(j))){//Si deux objet sont égaux
+                    if( get(i).equals(get(j))){//Si deux objet sont ï¿½gaux
                             nbCorrespond++; //On rajoute une correpondance au compteur
                         if(nbCorrespond > 1){
                             remove(j); //Plus d'une correspondance on supprime
@@ -86,13 +84,13 @@ public class Pile<E> {
                     }
                 }
             }
-        nbCorrespond = 0;//Réinitialise notre compteur
+        nbCorrespond = 0;//Rï¿½initialise notre compteur
         }
     }
     
     /*
-     *@comment méthode pour copier une collection pour ne pas avoir le même pointeur
-     * entre la collection copiée et celle obtenue
+     *@comment mï¿½thode pour copier une collection pour ne pas avoir le mï¿½me pointeur
+     * entre la collection copiï¿½e et celle obtenue
      */
     private Pile<E> copyCollection(){
         Pile<E> clone = new Pile<E>();
@@ -105,7 +103,7 @@ public class Pile<E> {
     /*
      *@author yk
      *@date 12/03/2008
-     *@comment Pour éventuellement effectuer les debugging
+     *@comment Pour ï¿½ventuellement effectuer les debugging
      */
     public String toString(){
         String str = "";
