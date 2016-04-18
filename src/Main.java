@@ -5,27 +5,19 @@
  *
  */
 
-import com.sun.naming.internal.ResourceManager;
-import java.awt.Frame;
-import javax.swing.JFrame;
-
-
 /**
+ * Main class
  *
- *@author Keith Yves
- *@comment Classe principale
+ * @author Yves Keith
  */
-
 public class Main {
-    /** Constructeur de la classe Main */
-    public Main() {
-    }
-    
+
     /**
-     * @param args the command line arguments
+     * @param args  the command line arguments
+     * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-        MainForm t = new MainForm();//Cr�ation de l'objet de type MainForm, le form principal de l'application
-        t.init();//Initialisation de la form (remplissage combobox, etc)
+        MainForm t = new MainForm();
+        t.init();
     }
 }
