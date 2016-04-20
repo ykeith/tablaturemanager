@@ -1,194 +1,115 @@
-import java.awt.*;
-import java.util.Collection;
-import java.util.Iterator;
+import javax.swing.*;
+import java.awt.Desktop;
 import java.io.File;
 
 /**
- * @author yk
+ * Main form
  */
 public class MainForm extends javax.swing.JFrame {
-    private String gpDir;    //Le r�pertoire des fichiers guitar pro
-    private String pathXml;  //Le chemin vers le xml : tmdata.xml
-    private String pathHtml; //Le chemin vers la page html d'aide
-    private Xml xmlFile = new Xml();        //Cr�ation d'un nouveau objet de notre classe xml
+    /**
+     * Directory with gp files
+     */
+    private String gpDirectory;
+    /**
+     * Path to tmdata.xml which contain data
+     */
+    private String pathXml;
+    /**
+     * Path to the HTML help page
+     */
+    private String pathHtml;
+    private Xml xml = new Xml();
+    private final String SELECT_STRING = "Select";
 
     /**
-     * Constructeur
+     * Constructor
      */
     public MainForm() {
         initComponents();
-        String tmDir = ""; //Le chemin vers le noeud courant de l'application pas de . parce que sinon le point reste est empeche lancement de fichier
-        File absolutPath = new File(tmDir); //On cr�er un nouveau fichier pour rechercher le chemin absolu
-        tmDir = absolutPath.getAbsolutePath(); //On recupere le chemin absolu
-        pathXml = tmDir + File.separator + "TMdata.xml"; //Notre fichier xml doit se trouver dans le m�me r�pertoire que notre application
-        pathHtml = tmDir + File.separator + "help.html"; //Fichier d'aide de tablatures manager
-        xmlFile.setFile(pathXml);
-//        System.out.println("tmDir=" + tmDir);//DEBUG
-//        System.out.println("pathXml=" + pathXml);//DEBUG
-        jComboBox2.setVisible(false);//TODO
-        jLabel2.setVisible(false);//TODO
+        // Current node of the application
+        File absolutePath = new File("");
+        String current = absolutePath.getAbsolutePath();
+        // Add data and help in the same directory as the application
+        // TODO configuration file
+        pathXml = current + File.separator + "TMdata.xml";
+        pathHtml = current + File.separator + "help.html";
+        xml.setFile(pathXml);
+        // TODO handle file list case
+        fileComboBox.setVisible(false);
+        jLabel2.setVisible(false);
     }
 
     /**
-     * @comment initialisation
-     * On regarde si nous avons d�j� un xml de donn�es
-     * Si oui, on regarde quel est le r�pertoire � lister et on fait la mise � jour du xml puis des comboBox
-     * Sinon On demande d'abord � l'utilisateur de choisir un r�pertoire et on cr�e le xml
+     * Initialization
+     * Search for data XML file or ask the user to choose the directory which should contain gp files
+     *
+     * @throws Exception
      */
     public void init() throws Exception {
         FilesLister filesList = new FilesLister();
-        if (!filesList.lookingForFile(pathXml)) { // Si le xml qui contient les donn�es n'existe pas
+        if (!filesList.lookingForFile(pathXml)) {
             showFileChooser();
         } else {
-            gpDir = xmlFile.readDirGp();//R�cup�ration du chemin du r�pertoire � lister, dans le xml
-//            System.out.println("gpDir="+gpDir);//DEBUG
-            xmlUpdate();//mise � jour du xml
-            xmlFile.save();//sauvegarde du xml
-            combo1Update();//mise � jour de la jcombobox1
-            comboUpdate();//mise � jours des autres combobox
-            show();//d�voile la frame principale � l'utilisateur
+            gpDirectory = xml.getDirectory();
+            xml.update();
+            showMainFrame();
         }
     }
 
     /**
-     * @comment Configure et affiche la jframe de choix de r�pertoire
+     * Configure and show file chooser
      */
     public void showFileChooser() {
-        jFrame3.setSize(600, 400);
-        jFrame3.setResizable(false);
-        jFrame3.setVisible(true);
+        fileChooser.setSize(600, 400);
+        fileChooser.setResizable(false);
+        fileChooser.setVisible(true);
+    }
+
+    public void showMainFrame()
+    {
+        pathComboUpdate();
+        comboBoxesUpdate();
+        setSize(900, 700);
+        setVisible(true);
     }
 
     /**
-     * @comment On recherche tous les path contenu dans le xml qu'on insert dans une collection
-     * On filtre les fichiers .gp et .gtp dans le r�pertoire qu'on insert dans une collection
-     * Puis on fait la comparaison des deux collections
-     * S'il y a des nouveaux fichiers on les ins�res dans le xml
-     * A l'inverse si certains fichiers ne sont plus l� on les supprimes
+     * Update a combo box regarding XML
+     *
+     * @param _comboBox combo box to update
+     * @param _tag tag to found
      */
-    public void xmlUpdate() {
-        FilesLister filesList = new FilesLister();  //construction d'un objet qui permet de lister les tablatures
-        Pile<String> allPath = xmlFile.getAllPath();//On recupere tous les chemins des fichiers
-        Pile<String> newPath = new Pile<String>();  //Pour pouvoir appeler la m�thode readNewPath
-        Pile<String> newAllPath = filesList.gpLister(gpDir, newPath);
-
-        if (newAllPath.getSize() > allPath.getSize()) { //Si le tableau de nouveau est plus grand
-            for (int i = 0; i < newAllPath.getSize(); i++) {
-                int verif = 0;
-                for (int j = 0; j < allPath.getSize(); j++) {
-                    if (newAllPath.get(i).compareTo(allPath.get(j)) == 0) {
-                        verif++;
-                    }
-                }
-                if (verif == 0) {
-//                     System.out.println("Une update � faire : ajout d'un nouveau noeud dans le xml");//DEBUG
-                    xmlFile.insertNode(newAllPath.get(i));
-                }
-            }
-        } else {
-            for (int i = 0; i < allPath.getSize(); i++) {
-                int verif = 0;
-                for (int j = 0; j < newAllPath.getSize(); j++) {
-                    if (newAllPath.get(j).compareTo(allPath.get(i)) == 0) {
-                        verif++;
-                    }
-                }
-                if (verif == 0) {
-//                    System.out.println("Une update � faire :  suppression d'un noeud dans le xml"); //DEBUG
-                    xmlFile.deleteNode(allPath.get(i)); //On supprime le noeud en question
-                }
+    private void comboUpdate(JComboBox<String> _comboBox, String _tag) {
+        Pile<String> pile = xml.find(_tag);
+        pile.sort();
+        _comboBox.removeAllItems();
+        _comboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[]{SELECT_STRING}));
+        for (int i = 0; i < pile.getSize(); i++) {
+            if (pile.get(i).compareTo("") != 0) {
+                _comboBox.addItem(pile.get(i));
             }
         }
     }
 
     /**
-     * @comment mise � jour de la comboBox1
-     * On gere combo1 � part car on peut vouloir garder son selected (pour l'option : "modifier")
+     * Update combo1
+     * Separate method from others combos (not always updated)
      */
-    private void combo1Update() {
-        jComboBox1.removeAllItems();
-        jComboBox1.addItem("Sélectionnez");
-        Pile<String> collChemin = xmlFile.readXml("CHEMIN");
-        for (int i = 0; i < collChemin.getSize(); i++) {
-            jComboBox1.addItem(collChemin.get(i));
-        }
+    private void pathComboUpdate() {
+        comboUpdate(pathComboBox, Xml.PATH_TAG);
     }
 
     /**
-     * @comment mise � jour des jcomboBox deux � huit
+     * Update combo boxes
      */
-    private void comboUpdate() {
-        Pile<String> fichier = xmlFile.readXml("FICHIER");
-        fichier.sort();
-        jComboBox2.removeAllItems();
-        jComboBox2.addItem("Sélectionnez");
-        for (int i = 0; i < fichier.getSize(); i++) {
-            jComboBox2.addItem(xmlFile.readXml("FICHIER").get(i));
-        }
-
-        //On r�cup�re la collection obtenu en resultat pour pouvoir la manipuler plus facilement sans avoir � rappeler la m�thode readXml
-        Pile<String> collecStr = xmlFile.readXml("NOM");
-//        System.out.println("Avant" + collecStr);//DEBUG
-        collecStr.sort(); //Fait le tri de la collection, �vite les doublon
-//        System.out.println("Apres" + collecStr);//DEBUG
-        jComboBox3.removeAllItems();//Suppresion de tous les objets contenu dans la jcombobox
-        jComboBox3.addItem("Sélectionnez");
-        for (int i = 0; i < collecStr.getSize(); i++) { //Boucle sur les r�sultat du xml
-            String str = collecStr.get(i).toString();
-            if (collecStr.get(i).compareTo("") != 0) { //On refuse les cha�nes vides
-                jComboBox3.addItem(collecStr.get(i));//Ajout
-            }
-        }
-
-        Pile<String> auteur = xmlFile.readXml("AUTEUR");
-        auteur.sort();
-        jComboBox4.removeAllItems();
-        jComboBox4.addItem("Sélectionnez");
-        for (int i = 0; i < auteur.getSize(); i++) {
-            if (auteur.get(i).compareTo("") != 0) {
-                jComboBox4.addItem(auteur.get(i));
-            }
-        }
-
-        Pile<String> album = xmlFile.readXml("ALBUM");
-        album.sort();
-        jComboBox5.removeAllItems();
-        jComboBox5.addItem("Sélectionnez");
-        for (int i = 0; i < album.getSize(); i++) {
-            if (album.get(i).compareTo("") != 0) {
-                jComboBox5.addItem(album.get(i));
-            }
-        }
-
-        Pile<String> difficulte = xmlFile.readXml("DIFFICULTE");
-        difficulte.sort();
-        jComboBox6.removeAllItems();
-        jComboBox6.addItem("Sélectionnez");
-        for (int i = 0; i < difficulte.getSize(); i++) {
-            if (difficulte.get(i).compareTo("") != 0) {
-                jComboBox6.addItem(difficulte.get(i));
-            }
-        }
-
-        Pile<String> maitrise = xmlFile.readXml("MAITRISE");
-        maitrise.sort();
-        jComboBox7.removeAllItems();
-        jComboBox7.addItem("Sélectionnez");
-        for (int i = 0; i < maitrise.getSize(); i++) {
-            if (maitrise.get(i).compareTo("") != 0) {
-                jComboBox7.addItem(maitrise.get(i));
-            }
-        }
-
-        Pile<String> commentaire = xmlFile.readXml("COMMENTAIRE");
-        commentaire.sort();
-        jComboBox8.removeAllItems();
-        jComboBox8.addItem("Sélectionnez");
-        for (int i = 0; i < commentaire.getSize(); i++) {
-            if (commentaire.get(i).compareTo("") != 0) {
-                jComboBox8.addItem(commentaire.get(i));
-            }
-        }
+    private void comboBoxesUpdate() {
+        comboUpdate(fileComboBox, Xml.FILE_TAG);
+        comboUpdate(nameComboBox, Xml.NAME_TAG);
+        comboUpdate(authorComboBox, Xml.AUTHOR_TAG);
+        comboUpdate(albumComboBox, Xml.ALBUM_TAG);
+        comboUpdate(difficultyComboBox, Xml.DIFFICULTY_TAG);
+        comboUpdate(masteryComboBox, Xml.MASTERY_TAG);
+        comboUpdate(commentComboBox, Xml.COMMENT_TAG);
     }
 
     /**
@@ -197,52 +118,62 @@ public class MainForm extends javax.swing.JFrame {
      * WARNING: Do NOT modify this code. The content of this method is
      * always regenerated by the Form Editor.
      */
-    // <editor-fold defaultstate="collapsed" desc=" Generated Code ">//GEN-BEGIN:initComponents
     private void initComponents() {
-        jFrame1 = new javax.swing.JFrame();
+        // Labels
+        String ok_string = "Ok";
+        String cancel_string = "Cancel";
+        String file_string = Xml.FILE_TAG;
+        String name_string = Xml.NAME_TAG;
+        String author_string = Xml.AUTHOR_TAG;
+        String album_string = Xml.ALBUM_TAG;
+        String difficulty_string = Xml.DIFFICULTY_TAG;
+        String mastery_string = Xml.MASTERY_TAG;
+        String comment_string = Xml.COMMENT_TAG;
+
+        modificationFrame = new javax.swing.JFrame();
         jLabel9 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
+        nameTextField = new javax.swing.JTextField();
         jLabel10 = new javax.swing.JLabel();
         jButton3 = new javax.swing.JButton();
         jButton4 = new javax.swing.JButton();
-        jTextField2 = new javax.swing.JTextField();
+        authorTextField = new javax.swing.JTextField();
         jLabel11 = new javax.swing.JLabel();
-        jTextField3 = new javax.swing.JTextField();
+        albumTextField = new javax.swing.JTextField();
         jLabel12 = new javax.swing.JLabel();
-        jTextField4 = new javax.swing.JTextField();
+        difficultyTextField = new javax.swing.JTextField();
         jLabel13 = new javax.swing.JLabel();
-        jTextField5 = new javax.swing.JTextField();
+        masteryTextField = new javax.swing.JTextField();
         jLabel14 = new javax.swing.JLabel();
-        jTextField6 = new javax.swing.JTextField();
-        jFrame2 = new javax.swing.JFrame();
+        commentTextField = new javax.swing.JTextField();
+        viewFrame = new javax.swing.JFrame();
         jLabel15 = new javax.swing.JLabel();
-        jLabel16 = new javax.swing.JLabel();
+        pathLabel = new javax.swing.JLabel();
         jLabel17 = new javax.swing.JLabel();
-        jLabel18 = new javax.swing.JLabel();
+        nameLabel = new javax.swing.JLabel();
         jLabel19 = new javax.swing.JLabel();
-        jLabel20 = new javax.swing.JLabel();
+        authorLabel = new javax.swing.JLabel();
         jLabel21 = new javax.swing.JLabel();
-        jLabel22 = new javax.swing.JLabel();
+        albumLabel = new javax.swing.JLabel();
         jLabel23 = new javax.swing.JLabel();
-        jLabel24 = new javax.swing.JLabel();
+        difficultyLabel = new javax.swing.JLabel();
         jLabel25 = new javax.swing.JLabel();
-        jLabel26 = new javax.swing.JLabel();
+        masteryLabel = new javax.swing.JLabel();
         jLabel27 = new javax.swing.JLabel();
-        jLabel28 = new javax.swing.JLabel();
+        commentLabel = new javax.swing.JLabel();
         jButton5 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
-        jFrame3 = new javax.swing.JFrame();
+        fileChooser = new javax.swing.JFrame();
         jFileChooser1 = new javax.swing.JFileChooser();
-        jComboBox1 = new javax.swing.JComboBox();
+        pathComboBox = new javax.swing.JComboBox();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
-        jComboBox2 = new javax.swing.JComboBox();
-        jComboBox3 = new javax.swing.JComboBox();
-        jComboBox4 = new javax.swing.JComboBox();
-        jComboBox5 = new javax.swing.JComboBox();
-        jComboBox6 = new javax.swing.JComboBox();
-        jComboBox7 = new javax.swing.JComboBox();
-        jComboBox8 = new javax.swing.JComboBox();
+        fileComboBox = new javax.swing.JComboBox();
+        nameComboBox = new javax.swing.JComboBox();
+        authorComboBox = new javax.swing.JComboBox();
+        albumComboBox = new javax.swing.JComboBox();
+        difficultyComboBox = new javax.swing.JComboBox();
+        masteryComboBox = new javax.swing.JComboBox();
+        commentComboBox = new javax.swing.JComboBox();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
@@ -262,59 +193,59 @@ public class MainForm extends javax.swing.JFrame {
         jMenuItem6 = new javax.swing.JMenuItem();
         jMenuItem7 = new javax.swing.JMenuItem();
 
-        jFrame1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
-        jFrame1.setResizable(false);
-        jLabel9.setText("Nom");
+        modificationFrame.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        modificationFrame.setResizable(false);
+        jLabel9.setText(Xml.NAME_TAG);
 
-        jTextField1.setText("jTextField1");
-        jTextField1.setMaximumSize(new java.awt.Dimension(6, 20));
-        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+        nameTextField.setText("nameTextField");
+        nameTextField.setMaximumSize(new java.awt.Dimension(6, 20));
+        nameTextField.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jTextField1ActionPerformed(evt);
             }
         });
 
-        jLabel10.setText("Artiste");
+        jLabel10.setText(author_string);
 
-        jButton3.setText("Valider");
+        jButton3.setText(ok_string);
         jButton3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                modifyButtonActionPerformed(evt);
             }
         });
 
-        jButton4.setText("Annuler");
+        jButton4.setText(cancel_string);
         jButton4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton4ActionPerformed(evt);
             }
         });
 
-        jTextField2.setText("jTextField2");
+        authorTextField.setText("authorTextField");
 
-        jLabel11.setText("Album");
+        jLabel11.setText(album_string);
 
-        jTextField3.setText("jTextField3");
+        albumTextField.setText("albumTextField");
 
-        jLabel12.setText("Difficulte");
+        jLabel12.setText(difficulty_string);
 
-        jTextField4.setText("jTextField4");
+        difficultyTextField.setText("difficultyTextField");
 
-        jLabel13.setText("Maitrise");
+        jLabel13.setText(mastery_string);
 
-        jTextField5.setText("jTextField5");
+        masteryTextField.setText("masteryTextField");
 
-        jLabel14.setText("Commentaire");
+        jLabel14.setText(comment_string);
 
-        jTextField6.setText("jTextField6");
-        jTextField6.addActionListener(new java.awt.event.ActionListener() {
+        commentTextField.setText("commentTextField");
+        commentTextField.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jTextField6ActionPerformed(evt);
             }
         });
 
-        org.jdesktop.layout.GroupLayout jFrame1Layout = new org.jdesktop.layout.GroupLayout(jFrame1.getContentPane());
-        jFrame1.getContentPane().setLayout(jFrame1Layout);
+        org.jdesktop.layout.GroupLayout jFrame1Layout = new org.jdesktop.layout.GroupLayout(modificationFrame.getContentPane());
+        modificationFrame.getContentPane().setLayout(jFrame1Layout);
         jFrame1Layout.setHorizontalGroup(
                 jFrame1Layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                         .add(jFrame1Layout.createSequentialGroup()
@@ -326,14 +257,14 @@ public class MainForm extends javax.swing.JFrame {
                                         .add(jLabel14)
                                         .add(org.jdesktop.layout.GroupLayout.TRAILING, jFrame1Layout.createSequentialGroup()
                                                 .add(jFrame1Layout.createParallelGroup(org.jdesktop.layout.GroupLayout.TRAILING)
-                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, jTextField5, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
-                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, jTextField4, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
-                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, jTextField3, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
-                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, jTextField2, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
-                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, jTextField1, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
+                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, masteryTextField, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
+                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, difficultyTextField, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
+                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, albumTextField, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
+                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, authorTextField, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
+                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, nameTextField, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE)
                                                         .add(org.jdesktop.layout.GroupLayout.LEADING, jLabel10)
                                                         .add(org.jdesktop.layout.GroupLayout.LEADING, jLabel9)
-                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, jTextField6, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE))
+                                                        .add(org.jdesktop.layout.GroupLayout.LEADING, commentTextField, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 71, Short.MAX_VALUE))
                                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                                 .add(jButton3)
                                                 .add(9, 9, 9)
@@ -346,23 +277,23 @@ public class MainForm extends javax.swing.JFrame {
                                 .addContainerGap()
                                 .add(jLabel9)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jTextField1, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(nameTextField, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel10)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jTextField2, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(authorTextField, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel11)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jTextField3, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(albumTextField, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel12)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jTextField4, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(difficultyTextField, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel13)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jTextField5, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(masteryTextField, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel14)
                                 .add(jFrame1Layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
@@ -374,55 +305,55 @@ public class MainForm extends javax.swing.JFrame {
                                                 .addContainerGap())
                                         .add(jFrame1Layout.createSequentialGroup()
                                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                                .add(jTextField6, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                                .add(commentTextField, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                                 .addContainerGap())))
         );
         jLabel15.setFont(new java.awt.Font("Tahoma", 1, 12));
-        jLabel15.setText("Fichier");
+        jLabel15.setText(file_string);
 
-        jLabel16.setText("jLabel15");
+        pathLabel.setText("jLabel15");
 
         jLabel17.setFont(new java.awt.Font("Tahoma", 1, 12));
-        jLabel17.setText("Nom");
+        jLabel17.setText(name_string);
 
-        jLabel18.setText("jLabel15");
+        nameLabel.setText("jLabel15");
 
-        jLabel19.setText("Artiste");
+        jLabel19.setText(author_string);
 
-        jLabel20.setText("jLabel15");
+        authorLabel.setText("jLabel15");
 
-        jLabel21.setText("Album");
+        jLabel21.setText(album_string);
 
-        jLabel22.setText("jLabel15");
+        albumLabel.setText("jLabel15");
 
-        jLabel23.setText("Difficulte");
+        jLabel23.setText(difficulty_string);
 
-        jLabel24.setText("jLabel15");
+        difficultyLabel.setText("jLabel15");
 
-        jLabel25.setText("Maitrise");
+        jLabel25.setText(mastery_string);
 
-        jLabel26.setText("jLabel15");
+        masteryLabel.setText("jLabel15");
 
-        jLabel27.setText("Commentaire");
+        jLabel27.setText(comment_string);
 
-        jLabel28.setText("jlabel28");
+        commentLabel.setText("jlabel28");
 
-        jButton5.setText("Valider");
+        jButton5.setText(ok_string);
         jButton5.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton5ActionPerformed(evt);
             }
         });
 
-        jButton6.setText("Annuler");
+        jButton6.setText(cancel_string);
         jButton6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton6ActionPerformed(evt);
             }
         });
 
-        org.jdesktop.layout.GroupLayout jFrame2Layout = new org.jdesktop.layout.GroupLayout(jFrame2.getContentPane());
-        jFrame2.getContentPane().setLayout(jFrame2Layout);
+        org.jdesktop.layout.GroupLayout jFrame2Layout = new org.jdesktop.layout.GroupLayout(viewFrame.getContentPane());
+        viewFrame.getContentPane().setLayout(jFrame2Layout);
         jFrame2Layout.setHorizontalGroup(
                 jFrame2Layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                         .add(org.jdesktop.layout.GroupLayout.TRAILING, jFrame2Layout.createSequentialGroup()
@@ -438,19 +369,19 @@ public class MainForm extends javax.swing.JFrame {
                         .add(jFrame2Layout.createSequentialGroup()
                                 .addContainerGap()
                                 .add(jFrame2Layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-                                        .add(jLabel28, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 385, Short.MAX_VALUE)
+                                        .add(commentLabel, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 385, Short.MAX_VALUE)
                                         .add(jLabel15)
-                                        .add(jLabel16)
+                                        .add(pathLabel)
                                         .add(jLabel17)
                                         .add(jLabel19)
-                                        .add(jLabel20)
+                                        .add(authorLabel)
                                         .add(jLabel21)
-                                        .add(jLabel22)
-                                        .add(jLabel24)
+                                        .add(albumLabel)
+                                        .add(difficultyLabel)
                                         .add(jLabel23)
                                         .add(jLabel25)
-                                        .add(jLabel26)
-                                        .add(jLabel18))
+                                        .add(masteryLabel)
+                                        .add(nameLabel))
                                 .addContainerGap())
         );
         jFrame2Layout.setVerticalGroup(
@@ -459,31 +390,31 @@ public class MainForm extends javax.swing.JFrame {
                                 .addContainerGap()
                                 .add(jLabel15)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jLabel16)
+                                .add(pathLabel)
                                 .add(16, 16, 16)
                                 .add(jLabel17)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jLabel18)
+                                .add(nameLabel)
                                 .add(14, 14, 14)
                                 .add(jLabel19)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jLabel20)
+                                .add(authorLabel)
                                 .add(16, 16, 16)
                                 .add(jLabel21)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jLabel22)
+                                .add(albumLabel)
                                 .add(16, 16, 16)
                                 .add(jLabel23)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jLabel24)
+                                .add(difficultyLabel)
                                 .add(17, 17, 17)
                                 .add(jLabel25)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jLabel26)
+                                .add(masteryLabel)
                                 .add(16, 16, 16)
                                 .add(jLabel27)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jLabel28)
+                                .add(commentLabel)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED, 7, Short.MAX_VALUE)
                                 .add(jFrame2Layout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
                                         .add(jButton6)
@@ -497,8 +428,8 @@ public class MainForm extends javax.swing.JFrame {
             }
         });
 
-        org.jdesktop.layout.GroupLayout jFrame3Layout = new org.jdesktop.layout.GroupLayout(jFrame3.getContentPane());
-        jFrame3.getContentPane().setLayout(jFrame3Layout);
+        org.jdesktop.layout.GroupLayout jFrame3Layout = new org.jdesktop.layout.GroupLayout(fileChooser.getContentPane());
+        fileChooser.getContentPane().setLayout(jFrame3Layout);
         jFrame3Layout.setHorizontalGroup(
                 jFrame3Layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                         .add(jFrame3Layout.createSequentialGroup()
@@ -515,112 +446,112 @@ public class MainForm extends javax.swing.JFrame {
         );
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel(new String[]{"S\u00e9lectionnez"}));
-        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
+        pathComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[]{SELECT_STRING}));
+        pathComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox1ActionPerformed(evt);
+                pathComboBoxActionPerformed(evt);
             }
         });
 
-        jButton1.setLabel("Valider");
+        jButton1.setText(ok_string);
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                validateButtonActionPerformed(evt);
             }
         });
 
-        jButton2.setLabel("Quitter");
+        jButton2.setText(cancel_string);
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
             }
         });
 
-        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel(new String[]{"S\u00e9lectionnez"}));
-        jComboBox2.addActionListener(new java.awt.event.ActionListener() {
+        fileComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[]{SELECT_STRING}));
+        fileComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox2ActionPerformed(evt);
+                fileComboBoxActionPerformed(evt);
             }
         });
 
-        jComboBox3.setModel(new javax.swing.DefaultComboBoxModel(new String[]{"S\u00e9lectionnez"}));
-        jComboBox3.addActionListener(new java.awt.event.ActionListener() {
+        nameComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[]{SELECT_STRING}));
+        nameComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox3ActionPerformed(evt);
+                nameComboBoxActionPerformed(evt);
             }
         });
 
-        jComboBox4.setModel(new javax.swing.DefaultComboBoxModel(new String[]{"S\u00e9lectionnez"}));
-        jComboBox4.addActionListener(new java.awt.event.ActionListener() {
+        authorComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[]{SELECT_STRING}));
+        authorComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox4ActionPerformed(evt);
+                authorComboBoxActionPerformed(evt);
             }
         });
 
-        jComboBox5.setModel(new javax.swing.DefaultComboBoxModel(new String[]{"S\u00e9lectionnez"}));
-        jComboBox5.addActionListener(new java.awt.event.ActionListener() {
+        albumComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[]{SELECT_STRING}));
+        albumComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox5ActionPerformed(evt);
+                albumComboBoxActionPerformed(evt);
             }
         });
 
-        jComboBox6.setModel(new javax.swing.DefaultComboBoxModel(new String[]{"S\u00e9lectionnez"}));
-        jComboBox6.addActionListener(new java.awt.event.ActionListener() {
+        difficultyComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[]{SELECT_STRING}));
+        difficultyComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox6ActionPerformed(evt);
+                difficultyComboBoxActionPerformed(evt);
             }
         });
 
-        jComboBox7.setModel(new javax.swing.DefaultComboBoxModel(new String[]{"S\u00e9lectionnez"}));
-        jComboBox7.addActionListener(new java.awt.event.ActionListener() {
+        masteryComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[]{SELECT_STRING}));
+        masteryComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox7ActionPerformed(evt);
+                masteryComboBoxActionPerformed(evt);
             }
         });
 
-        jComboBox8.setModel(new javax.swing.DefaultComboBoxModel(new String[]{"S\u00e9lectionnez"}));
-        jComboBox8.addActionListener(new java.awt.event.ActionListener() {
+        commentComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[]{SELECT_STRING}));
+        commentComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox8ActionPerformed(evt);
+                commentComboBoxActionPerformed(evt);
             }
         });
 
-        jLabel1.setText("Fichier");
+        jLabel1.setText(file_string);
 
-        jLabel2.setText("Nom du Fichier");
+        jLabel2.setText("File name");
 
-        jLabel3.setText("Nom");
+        jLabel3.setText(name_string);
 
-        jLabel4.setText("Artiste");
+        jLabel4.setText(author_string);
 
-        jLabel5.setText("Album");
+        jLabel5.setText(album_string);
 
-        jLabel6.setText("Difficulte");
+        jLabel6.setText(difficulty_string);
 
-        jLabel7.setText("Maitrise");
+        jLabel7.setText(mastery_string);
 
-        jLabel8.setText("Commentaire");
+        jLabel8.setText(comment_string);
 
         jMenu1.setText("Menu");
-        jMenuItem1.setLabel("Modifier");
+        jMenuItem1.setText("Modify");
         jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem1ActionPerformed(evt);
+                modificationMenuItem1ActionPerformed(evt);
             }
         });
 
         jMenu1.add(jMenuItem1);
 
-        jMenuItem2.setText("Afficher");
+        jMenuItem2.setText("Show");
         jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem2ActionPerformed(evt);
+                menuViewActionPerformed(evt);
             }
         });
 
         jMenu1.add(jMenuItem2);
 
-        jMenuItem3.setText("Voir le xml");
+        jMenuItem3.setText("Show XML");
         jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem3ActionPerformed(evt);
@@ -629,7 +560,7 @@ public class MainForm extends javax.swing.JFrame {
 
         jMenu1.add(jMenuItem3);
 
-        jMenuItem4.setText("Aide");
+        jMenuItem4.setText("Help");
         jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem4ActionPerformed(evt);
@@ -638,7 +569,7 @@ public class MainForm extends javax.swing.JFrame {
 
         jMenu1.add(jMenuItem4);
 
-        jMenuItem5.setText("Quitter");
+        jMenuItem5.setText("Quit");
         jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem5ActionPerformed(evt);
@@ -649,14 +580,14 @@ public class MainForm extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu1);
 
-        jMenu2.setText("Outils");
+        jMenu2.setText("Tools");
         jMenu2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenu2ActionPerformed(evt);
             }
         });
 
-        jMenuItem6.setText("Mettre \u00e0 jour le xml");
+        jMenuItem6.setText("Update XML");
         jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem6ActionPerformed(evt);
@@ -665,7 +596,7 @@ public class MainForm extends javax.swing.JFrame {
 
         jMenu2.add(jMenuItem6);
 
-        jMenuItem7.setText("Remise \u00e0 z\u00e9ro de la recherche");
+        jMenuItem7.setText("Reload search");
         jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem7ActionPerformed(evt);
@@ -692,25 +623,25 @@ public class MainForm extends javax.swing.JFrame {
                                                         .add(jButton2))
                                                 .add(layout.createSequentialGroup()
                                                         .addContainerGap()
-                                                        .add(jComboBox1, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                                                        .add(pathComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                                                 .add(layout.createSequentialGroup()
                                                         .addContainerGap()
-                                                        .add(jComboBox2, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                                                        .add(fileComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                                                 .add(layout.createSequentialGroup()
                                                         .addContainerGap()
-                                                        .add(jComboBox3, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                                                        .add(nameComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                                                 .add(layout.createSequentialGroup()
                                                         .addContainerGap()
-                                                        .add(jComboBox4, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                                                        .add(authorComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                                                 .add(layout.createSequentialGroup()
                                                         .addContainerGap()
-                                                        .add(jComboBox5, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                                                        .add(albumComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                                                 .add(layout.createSequentialGroup()
                                                         .addContainerGap()
-                                                        .add(jComboBox6, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                                                        .add(difficultyComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                                                 .add(layout.createSequentialGroup()
                                                         .addContainerGap()
-                                                        .add(jComboBox7, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)))
+                                                        .add(masteryComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)))
                                         .add(layout.createSequentialGroup()
                                                 .addContainerGap()
                                                 .add(jLabel1))
@@ -732,7 +663,7 @@ public class MainForm extends javax.swing.JFrame {
                                         .add(layout.createSequentialGroup()
                                                 .addContainerGap()
                                                 .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-                                                        .add(jComboBox8, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                                        .add(commentComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                                         .add(jLabel7)
                                                         .add(jLabel8))))
                                 .addContainerGap(403, Short.MAX_VALUE))
@@ -743,35 +674,35 @@ public class MainForm extends javax.swing.JFrame {
                                 .add(107, 107, 107)
                                 .add(jLabel1)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                                .add(jComboBox1, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(pathComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel2)
                                 .add(6, 6, 6)
-                                .add(jComboBox2, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(fileComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel3)
                                 .add(6, 6, 6)
-                                .add(jComboBox3, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(nameComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel4)
                                 .add(6, 6, 6)
-                                .add(jComboBox4, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(authorComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel5)
                                 .add(6, 6, 6)
-                                .add(jComboBox5, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(albumComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel6)
                                 .add(6, 6, 6)
-                                .add(jComboBox6, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(difficultyComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel7)
                                 .add(6, 6, 6)
-                                .add(jComboBox7, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(masteryComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(jLabel8)
                                 .add(6, 6, 6)
-                                .add(jComboBox8, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(commentComboBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED, 47, Short.MAX_VALUE)
                                 .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
                                         .add(jButton2)
@@ -779,224 +710,184 @@ public class MainForm extends javax.swing.JFrame {
                                 .addContainerGap())
         );
         pack();
-    }// </editor-fold>//GEN-END:initComponents
+    }
 
-    private void jMenu2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenu2ActionPerformed
-    }//GEN-LAST:event_jMenu2ActionPerformed
+    private void jMenu2ActionPerformed(java.awt.event.ActionEvent evt) {
+    }
 
-    private void jFileChooser1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jFileChooser1ActionPerformed
-        if (evt.getActionCommand().equals("ApproveSelection")) {                //Si l'utilisateur appuie sur le bouton ok
-            gpDir = jFileChooser1.getSelectedFile().getAbsolutePath();  //R�cup�re le r�pertoire des fichiers gp donn� par l'utilisateur
-//            System.out.println("gpDir=" + gpDir);//DEBUG
-            xmlFile.insertDir(gpDir);//On cr�er l'�l�ment r�pertoire dans le xml avec en valeur le choix de l'utilisateur
-            jFrame3.dispose();                                          //On se s�pare de jfram3 qui contint le filechooser
-            setSize(900, 700);
-            Pile<String> listPath = new Pile<String>();
-            FilesLister filesList = new FilesLister();
-            listPath = filesList.gpLister(gpDir, listPath);             //on lit le repertoire pour lister les tablatures
-            for (int i = 0; i < listPath.getSize(); i++) {
-                xmlFile.insertNode(listPath.get(i));
-            }
-            xmlFile.save();                                             //On enregistre les modifications
-            combo1Update();
-            comboUpdate();                                              //On genere les autres comboBox
-            show();                                                     //D�voile la jframe � l'utilisateur
+    private void jFileChooser1ActionPerformed(java.awt.event.ActionEvent evt) {
+        // User click on OK button
+        if (evt.getActionCommand().equals("ApproveSelection")) {
+            gpDirectory = jFileChooser1.getSelectedFile().getAbsolutePath();
+            // Add the directory (absolute path) to the XML
+            xml.addDirectory(gpDirectory);
+            fileChooser.dispose();
+            xml.load();
+            showMainFrame();
         }
-        if (evt.getActionCommand().equals("CancelSelection")) {                 //S'il appuie sur le bouton cancel
-            System.exit(0); //Quitte l'application
+        else if (evt.getActionCommand().equals("CancelSelection")) {
+            System.exit(0);
         }
-    }//GEN-LAST:event_jFileChooser1ActionPerformed
+    }
 
-    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
-        combo1Update();
-        comboUpdate(); //On appel la mise � jour des combos
-    }//GEN-LAST:event_jMenuItem7ActionPerformed
+    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {
+        pathComboUpdate();
+        comboBoxesUpdate();
+    }
 
-    private void jTextField6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField6ActionPerformed
-    }//GEN-LAST:event_jTextField6ActionPerformed
+    private void jTextField6ActionPerformed(java.awt.event.ActionEvent evt) {
+    }
 
-    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
-        jFrame2.dispose();
-    }//GEN-LAST:event_jButton6ActionPerformed
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {
+        viewFrame.dispose();
+    }
 
-    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-        jButton1ActionPerformed(evt); //On appel la m�thode du jButton1
-        jFrame2.dispose();//On retire la jFrame2
-    }//GEN-LAST:event_jButton5ActionPerformed
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {
+        validateButtonActionPerformed(evt);
+        viewFrame.dispose();
+    }
 
-    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
-        xmlUpdate(); //On mets le xml � jour
-        xmlFile.save();
-        combo1Update();
-        comboUpdate();
-    }//GEN-LAST:event_jMenuItem6ActionPerformed
+    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {
+        xml.update();
+        pathComboUpdate();
+        comboBoxesUpdate();
+    }
 
-    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
-        //Si on a autre chose que la String S�lectionnez de s�lectionn� dans la combobox1
-        if (jComboBox1.getSelectedItem().toString().compareTo("Sélectionnez") != 0) {
-            jLabel16.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "CHEMIN"));
-            jLabel18.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "NOM"));
-            jLabel20.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "AUTEUR"));
-            jLabel22.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "ALBUM"));
-            jLabel24.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "DIFFICULTE"));
-            jLabel26.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "MAITRISE"));
-            jLabel28.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "COMMENTAIRE"));
-            jFrame2.setSize(700, 500); //On modifie la taille du form pour quelle soit confortable
-            jFrame2.setVisible(true);
+    private void menuViewActionPerformed(java.awt.event.ActionEvent evt) {
+        // If something have been selected in pathComboBox
+        if (pathComboBox.getSelectedItem().toString().compareTo(SELECT_STRING) != 0) {
+            pathLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.PATH_TAG));
+            nameLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.NAME_TAG));
+            authorLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.AUTHOR_TAG));
+            albumLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.ALBUM_TAG));
+            difficultyLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.DIFFICULTY_TAG));
+            masteryLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.MASTERY_TAG));
+            commentLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.COMMENT_TAG));
+            viewFrame.setSize(700, 500);
+            viewFrame.setVisible(true);
         }
-    }//GEN-LAST:event_jMenuItem2ActionPerformed
+    }
 
-    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
-        System.out.println("passage par ouverture xml=" + pathXml);
+    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {
         try {
             File file = new File(pathXml);
             Desktop desktop = Desktop.getDesktop();
             desktop.open(file);
         } catch (Exception e) {
-            System.out.println("erreur d'execution " + e.toString());
+            System.out.println(e.toString());
         }
-    }//GEN-LAST:event_jMenuItem3ActionPerformed
+    }
 
-    private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
+    private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {
         try {
             File file = new File(pathHtml);
             Desktop desktop = Desktop.getDesktop();
             desktop.open(file);
         } catch (Exception e) {
-            System.out.println("erreur d'execution " + e.toString());
+            System.out.println(e.toString());
         }
-    }//GEN-LAST:event_jMenuItem4ActionPerformed
+    }
 
-    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
-        System.exit(0); //Quitte l'application
-    }//GEN-LAST:event_jMenuItem5ActionPerformed
+    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {
+        System.exit(0);
+    }
 
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        jFrame1.dispose();
-    }//GEN-LAST:event_jButton4ActionPerformed
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {
+        modificationFrame.dispose();
+    }
 
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        xmlFile.modifElement(jComboBox1.getSelectedItem().toString(), "NOM", jTextField1.getText());
-        xmlFile.modifElement(jComboBox1.getSelectedItem().toString(), "AUTEUR", jTextField2.getText());
-        xmlFile.modifElement(jComboBox1.getSelectedItem().toString(), "ALBUM", jTextField3.getText());
-        xmlFile.modifElement(jComboBox1.getSelectedItem().toString(), "DIFFICULTE", jTextField4.getText());
-        xmlFile.modifElement(jComboBox1.getSelectedItem().toString(), "MAITRISE", jTextField5.getText());
-        xmlFile.modifElement(jComboBox1.getSelectedItem().toString(), "COMMENTAIRE", jTextField6.getText());
-        xmlFile.save();
-        comboUpdate();//On regenere les comboBox car il y a eu changement dans le xml, mais pas le combobox1 puisqu'il n'y a pas de nouvelle chanson
-        jFrame1.dispose();
-    }//GEN-LAST:event_jButton3ActionPerformed
+    private void modifyButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        // TODO handle update in xml class
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.NAME_TAG, nameTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.AUTHOR_TAG, authorTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.ALBUM_TAG, albumTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.DIFFICULTY_TAG, difficultyTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.MASTERY_TAG, masteryTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.COMMENT_TAG, commentTextField.getText());
+        xml.save();
+        comboBoxesUpdate();
+        modificationFrame.dispose();
+    }
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
-// TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {
+    }
 
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        // jTextField1.setText(jComboBox3.getSelectedItem().toString());
-        if (jComboBox1.getSelectedItem().toString().compareTo("Sélectionnez") != 0) { //Si on a autre chose que la String S�lectionnez de s�lectionn� dans la combobox
-            jTextField1.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "NOM"));
-            jTextField2.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "AUTEUR"));
-            jTextField3.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "ALBUM"));
-            jTextField4.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "DIFFICULTE"));
-            jTextField5.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "MAITRISE"));
-            jTextField6.setText(xmlFile.readElement(jComboBox1.getSelectedItem().toString(), "COMMENTAIRE"));
-            jFrame1.setSize(400, 400);
-            jFrame1.setVisible(true); //REnd visible notre frame pour les modifications
+    private void modificationMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {
+        if (pathComboBox.getSelectedItem().toString().compareTo(SELECT_STRING) != 0) {
+            nameTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.NAME_TAG));
+            authorTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.AUTHOR_TAG));
+            albumTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.ALBUM_TAG));
+            difficultyTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.DIFFICULTY_TAG));
+            masteryTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.MASTERY_TAG));
+            commentTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.COMMENT_TAG));
+            modificationFrame.setSize(400, 400);
+            modificationFrame.setVisible(true);
         }
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
+    }
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         try {
-            File file = new File(jComboBox1.getSelectedItem().toString());
+            File file = new File(pathComboBox.getSelectedItem().toString());
             Desktop desktop = Desktop.getDesktop();
             desktop.open(file);
 
         } catch (Exception e) {
-            System.out.println("erreur d'execution " + e.toString());
+            System.out.println(e.toString());
         }
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }
 
-    private void jComboBox8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox8ActionPerformed
-        if (jComboBox8.getItemCount() > 0) {
-            if (jComboBox8.getSelectedItem().toString() != "Sélectionnez") {
-                jComboBox1.removeAllItems();
-                Pile<String> list = xmlFile.pathFilter("COMMENTAIRE", jComboBox8.getSelectedItem().toString());
+    /**
+     * Select path in pathComboBox that corresponding to the selection of _comboBox
+     *
+     * @param _comboBox JComboBox<String>
+     * @param _tag String
+     */
+    private void comboBoxAction(JComboBox<String> _comboBox, String _tag) {
+        if (_comboBox.getItemCount() > 0) {
+            if (_comboBox.getSelectedItem().toString().compareTo(SELECT_STRING) != 0) {
+                pathComboBox.removeAllItems();
+                Pile<String> list = xml.findPath(_tag, _comboBox.getSelectedItem().toString());
                 for (int i = 0; i < list.getSize(); i++) {
-                    jComboBox1.addItem(list.get(i));
+                    pathComboBox.addItem(list.get(i));
                 }
             }
         }
-    }//GEN-LAST:event_jComboBox8ActionPerformed
+    }
 
-    private void jComboBox7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox7ActionPerformed
-        if (jComboBox7.getItemCount() > 0) {
-            if (jComboBox7.getSelectedItem().toString() != "Sélectionnez") {
-                jComboBox1.removeAllItems();
-                Pile<String> list = xmlFile.pathFilter("MAITRISE", jComboBox7.getSelectedItem().toString());
-                for (int i = 0; i < list.getSize(); i++) {
-                    jComboBox1.addItem(list.get(i));
-                }
-            }
-        }
-    }//GEN-LAST:event_jComboBox7ActionPerformed
+    private void commentComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
+        comboBoxAction(commentComboBox, Xml.COMMENT_TAG);
+    }
 
-    private void jComboBox6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox6ActionPerformed
-        if (jComboBox6.getItemCount() > 0) {
-            if (jComboBox6.getSelectedItem().toString() != "Sélectionnez") {
-                jComboBox1.removeAllItems();
-                Pile<String> list = xmlFile.pathFilter("DIFFICULTE", jComboBox6.getSelectedItem().toString());
-                for (int i = 0; i < list.getSize(); i++) {
-                    jComboBox1.addItem(list.get(i));
-                }
-            }
-        }
-    }//GEN-LAST:event_jComboBox6ActionPerformed
+    private void masteryComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
+        comboBoxAction(masteryComboBox, Xml.MASTERY_TAG);
+    }
 
-    private void jComboBox5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox5ActionPerformed
-        if (jComboBox5.getItemCount() > 0) {
-            if (jComboBox5.getSelectedItem().toString() != "Sélectionnez") {
-                jComboBox1.removeAllItems();
-                Pile<String> list = xmlFile.pathFilter("ALBUM", jComboBox5.getSelectedItem().toString());
-                for (int i = 0; i < list.getSize(); i++) {
-                    jComboBox1.addItem(list.get(i));
-                }
-            }
-        }
-    }//GEN-LAST:event_jComboBox5ActionPerformed
+    private void difficultyComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
+        comboBoxAction(difficultyComboBox, Xml.DIFFICULTY_TAG);
+    }
 
-    private void jComboBox4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox4ActionPerformed
-        if (jComboBox4.getItemCount() > 0) {
-            if (jComboBox4.getSelectedItem().toString() != "Sélectionnez") {
-                jComboBox1.removeAllItems();
-                Pile<String> list = xmlFile.pathFilter("AUTEUR", jComboBox4.getSelectedItem().toString());
-                for (int i = 0; i < list.getSize(); i++) {
-                    jComboBox1.addItem(list.get(i));
-                }
-            }
-        }
-    }//GEN-LAST:event_jComboBox4ActionPerformed
+    private void albumComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
+        comboBoxAction(albumComboBox, Xml.ALBUM_TAG);
+    }
 
-    private void jComboBox3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox3ActionPerformed
-        if (jComboBox3.getItemCount() > 0) { //Si on a des items dans la combo
-            if (jComboBox3.getSelectedItem().toString() != "Sélectionnez") { //Si ce n'est pas "S�lectionnez" qui est s�lectionn�
-                jComboBox1.removeAllItems(); //On supprime tous les �l�ments dans la combo1
-                Pile<String> list = xmlFile.pathFilter("NOM", jComboBox3.getSelectedItem().toString()); //On appel la m�thode qui r�cup�re tous les CHEMIN qui ont en enfant une balise (1er param�tre) � la valeur du 2nd param�tre
-                for (int i = 0; i < list.getSize(); i++) {
-                    jComboBox1.addItem(list.get(i));
-                }
-            }
-        }
-    }//GEN-LAST:event_jComboBox3ActionPerformed
+    private void authorComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
+        comboBoxAction(authorComboBox, Xml.AUTHOR_TAG);
+    }
 
-    private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
-    }//GEN-LAST:event_jComboBox2ActionPerformed
+    private void nameComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
+        comboBoxAction(nameComboBox, Xml.NAME_TAG);
+    }
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        System.exit(0); //Quitte l'application
-    }//GEN-LAST:event_jButton2ActionPerformed
+    private void fileComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
+    }
 
-    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
-    }//GEN-LAST:event_jComboBox1ActionPerformed
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {
+        // Exit the application
+        System.exit(0);
+    }
+
+    private void pathComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
+    }
 
     /**
      * @param args the command line arguments
@@ -1009,25 +900,25 @@ public class MainForm extends javax.swing.JFrame {
         });
     }
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // Variables declaration - do not modify
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
-    private javax.swing.JComboBox <String> jComboBox1;
-    private javax.swing.JComboBox jComboBox2;
-    private javax.swing.JComboBox jComboBox3;
-    private javax.swing.JComboBox jComboBox4;
-    private javax.swing.JComboBox jComboBox5;
-    private javax.swing.JComboBox jComboBox6;
-    private javax.swing.JComboBox jComboBox7;
-    private javax.swing.JComboBox jComboBox8;
+    private javax.swing.JComboBox <String> pathComboBox;
+    private javax.swing.JComboBox <String> fileComboBox;
+    private javax.swing.JComboBox <String> nameComboBox;
+    private javax.swing.JComboBox <String> authorComboBox;
+    private javax.swing.JComboBox <String> albumComboBox;
+    private javax.swing.JComboBox <String> difficultyComboBox;
+    private javax.swing.JComboBox <String> masteryComboBox;
+    private javax.swing.JComboBox <String> commentComboBox;
     private javax.swing.JFileChooser jFileChooser1;
-    private javax.swing.JFrame jFrame1;
-    private javax.swing.JFrame jFrame2;
-    private javax.swing.JFrame jFrame3;
+    private javax.swing.JFrame modificationFrame;
+    private javax.swing.JFrame viewFrame;
+    private javax.swing.JFrame fileChooser;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -1035,20 +926,20 @@ public class MainForm extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
-    private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel pathLabel;
     private javax.swing.JLabel jLabel17;
-    private javax.swing.JLabel jLabel18;
+    private javax.swing.JLabel nameLabel;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel20;
+    private javax.swing.JLabel authorLabel;
     private javax.swing.JLabel jLabel21;
-    private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel albumLabel;
     private javax.swing.JLabel jLabel23;
-    private javax.swing.JLabel jLabel24;
+    private javax.swing.JLabel difficultyLabel;
     private javax.swing.JLabel jLabel25;
-    private javax.swing.JLabel jLabel26;
+    private javax.swing.JLabel masteryLabel;
     private javax.swing.JLabel jLabel27;
-    private javax.swing.JLabel jLabel28;
+    private javax.swing.JLabel commentLabel;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1066,12 +957,11 @@ public class MainForm extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField2;
-    private javax.swing.JTextField jTextField3;
-    private javax.swing.JTextField jTextField4;
-    private javax.swing.JTextField jTextField5;
-    private javax.swing.JTextField jTextField6;
-    // End of variables declaration//GEN-END:variables
-
+    private javax.swing.JTextField nameTextField;
+    private javax.swing.JTextField authorTextField;
+    private javax.swing.JTextField albumTextField;
+    private javax.swing.JTextField difficultyTextField;
+    private javax.swing.JTextField masteryTextField;
+    private javax.swing.JTextField commentTextField;
+    // End of variables declaration
 }

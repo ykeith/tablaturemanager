@@ -1,236 +1,315 @@
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Iterator;
-import org.jdom2.*;
+
+import org.jdom2.Element;
+import org.jdom2.Document;
 import org.jdom2.input.SAXBuilder;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
 /**
- *@comment Classe de gestion de fichier xml
+ * Handle XML file
  */
 public class Xml {
-    private static String path;//Le chemin fichier de notre xml
-    private File fileXml;//Le fichier xml
-    private static Element racine; //Cr�ation de la racine du fichier xml pour la lecture et �criture
-    private static org.jdom2.Document document;//On cr�e un nouveau Document JDOM bas� sur la racine que l'on vient de cr�er pour la lecture et �criture
-    
+
     /**
-     *@comment Constructeur de la classe Xml
+     * Path of the XML file
      */
-    public Xml(){ //Constructeur pour cr�ation d'un nouveau xml
-        racine = new Element("FICHIERS");//Cr�ation de la racine du fichier xml
-        document = new Document(racine);//Cr�ation d'un nouveau Document JDOM bas� sur la racine que l'on vient de cr�er
-    }
-    
+    private String path;
+    private Element root;
+    private Document document;
+    private File fileXml;
+
+    public static final String ROOT_TAG = "files";
+    public static final String DIRECTORY_TAG = "directory";
+    public static final String MUSIC_TAG = "music";
+    public static final String PATH_TAG = "path";
+    public static final String FILE_TAG = "file";
+    public static final String NAME_TAG = "name";
+    public static final String AUTHOR_TAG = "author";
+    public static final String ALBUM_TAG = "album";
+    public static final String DIFFICULTY_TAG = "difficulty";
+    public static final String MASTERY_TAG = "mastery";
+    public static final String COMMENT_TAG = "comment";
+
     /**
-     *@param String
-     *@comment Permet la r�cup�ration du fichier xml en prenant
-     * en param�tre le chemin du fichier
+     * Constructor
      */
-    public void setFile(String _filePath){
-        path = _filePath;
-        fileXml = new File(path);
-    }
-    
-    /**
-     *@comment permet le parsing et la r�cup�ration de l'�l�ment racine du fichier xml
-     */
-     static void readRoot() throws Exception { //throws Exception pour la gestion d'une �ventuelle erreur
-        SAXBuilder sxb = new SAXBuilder();//On cr�e une instance de SAXBuilder
-        document = sxb.build(new File(path));//Ajoute le fichier xml pars� � notre document JDOM
-        racine = document.getRootElement(); //R�cup�re l'�l�ment racine du document JDOM
+    public Xml() {
+        root = new Element(ROOT_TAG);
+        document = new Document(root);
     }
 
     /**
-    *@param String
-    *@return void
-    *@comment Cette m�thode ajoute la balise r�pertoire au xml
-    * �l�ment enfant de l'�l�ment racine,
-    * On y rajoute comme valeur le chemin du r�pertoire pass� en param�tre
-    */
-     public void insertDir(String _directoryName){
-            Element directory = new Element("REPERTOIRE");//Cr�ation d'un nouvel �l�ment REPERTOIRE
-            directory.setText(_directoryName);//Ajout du texte
-            racine.addContent(directory);//Rajout de l'�l�ment � la racine
-     }
-     
-    /**
-    *@param String
-    *@return void
-    *@comment Cette m�thode ajoute une noeud "MUSIQUE" et ses enfants � notre xml
-    * avec comme valeur pour l'�l�ment CHEMIN la valeur du param�tre
-    */
-    public void insertNode(String _pathFile){
-        Element musique = new Element("MUSIQUE");
-        racine.addContent(musique);
-        Element chemin = new Element("CHEMIN");
-        chemin.setText(_pathFile);
-        musique.addContent(chemin);
-        Element fichier = new Element("FICHIER");
-        musique.addContent(fichier);
-        Element nom = new Element("NOM");
-        musique.addContent(nom);
-        Element auteur = new Element("AUTEUR");
-        musique.addContent(auteur);
-        Element album = new Element("ALBUM");
-        musique.addContent(album);
-        Element difficulte = new Element("DIFFICULTE");
-        musique.addContent(difficulte);
-        Element maitrise = new Element("MAITRISE");
-        musique.addContent(maitrise);
-        Element commentaire = new Element("COMMENTAIRE");
-        musique.addContent(commentaire);
-    }
-    
-    /**
-     *@comment m�thode de sauvegarde du fichier xml
+     * Read the root
+     *
+     * @throws Exception
      */
-    public void save(){
-        try{
-            //On utilise ici un affichage classique avec getPrettyFormat()
-            XMLOutputter sortie = new XMLOutputter(Format.getPrettyFormat());
-            //Il suffit simplement de cr�er une instance de FileOutputStream
-            //avec en argument le nom du fichier pour effectuer la s�rialisation.
-            sortie.output(document, new FileOutputStream(path));
+    private void readRoot() throws Exception {
+        SAXBuilder sxb = new SAXBuilder();
+        document = sxb.build(new File(path));
+        root = document.getRootElement();
+    }
+
+    /**
+     * Get an element from a music node
+     *
+     * @param _pathNode string content of the path node (acting like an index for music node)
+     * @param _tagName  tagName of the researched element
+     * @return Element
+     */
+    private Element getElement(String _pathNode, String _tagName) throws Exception {
+        List listMusique = root.getChildren(MUSIC_TAG);
+        Iterator i = listMusique.iterator();
+        while (i.hasNext()) {
+            Element current = (Element) i.next();
+            // Found by index (path node)
+            if (current.getChildText(PATH_TAG).compareTo(_pathNode) == 0) {
+                // Get the element which have the good tag name
+                return current.getChild(_tagName.toLowerCase());
+            }
         }
-        catch (IOException e){
+        throw new Exception("An error occurred while trying to get access to a node");
+    }
+
+    /**
+     * Set an element value
+     *
+     * @param _pathNode string content of the path node (acting like an index for music node)
+     * @param _tagName  tagName of the element to by modify
+     * @param _value    value to set
+     */
+    public void setElementValue(String _pathNode, String _tagName, String _value) {
+        try {
+            Element element = getElement(_pathNode, _tagName);
+            element.setText(_value);
+        } catch (Exception e) {
             System.out.println(e.toString());
         }
     }
-    
+
     /**
-     *@param String
-     *@return Pile<String>
-     *@comment Retourne toutes les valeurs que prend l'�l�ment pass� en param�tre dans le xml
+     * Get the value of an element
+     *
+     * @param _pathNode string content of the path node (acting like an index for music node)
+     * @param _tagName  tagName of the element to by modify
+     * @return String
      */
-    public Pile<String> readXml (String _element){
-        List listMusique = racine.getChildren("MUSIQUE");//On cr�e une List contenant tous les noeuds "MUSIQUE" de l'Element racine
-        Iterator i = listMusique.iterator();//Cr�ation d'un Iterator sur notre liste
-        Pile <String>arrayChemin = new Pile();//Cr�ation d'un collection de String
-        while(i.hasNext()){//Boucle sur l'iterator
-            Element courant = (Element)i.next();//On recr�e l'Element courant � chaque tour de boucle afin de pouvoir utiliser les m�thodes propres aux Element //(element) => cast ou transtypage
-            //On empile dans notre collection le texte coresspondant au noeud i (du while) de l'element pass� en parametre monter en majuscule (comme les noeud dans le xml)
-            arrayChemin.empiler(courant.getChild(_element.toUpperCase()).getText());//toUpperCase car le xml est construit en majuscule
+    public String readElement(String _pathNode, String _tagName) {
+        String value = null;
+        try {
+            Element element = getElement(_pathNode, _tagName);
+            value = element.getText();
+        } catch (Exception e) {
+            System.out.println(e.toString());
         }
-        return arrayChemin;
+        return value;
     }
-    
+
     /**
-     *@param String, String
-     *@return Element
-     *@comment Cette m�thode filtre le xml � la recherche de l'�l�ment dont le nom est �gal � la valeur contenu dans _researchElement
-     * et correspondant � une balise dans un noeud dont l'�l�ment CHEMIN � pour valeur la valeur contenu dans _pathFile
-     * enfin elle renvoit l'�l�ment en question sous la forme d'un Element
+     * Find the path (acting like an index) of every nodes that contain a specific node with a specific value
+     *
+     * @param _tagName tag name to search
+     * @param _value   value to search
+     * @return Pile<String>
      */
-     static Element elementFilter(String _pathFile, String _researchElement){   
-        List listMusique = racine.getChildren("MUSIQUE");
-        Iterator i = listMusique.iterator();
-        Pile <Element>resultElements = new Pile();
-        Element elm = racine;//Cr�ation d'un �l�ment qui � la valeur de racine
-        while(i.hasNext()){
-            Element current = (Element)i.next();
-            //Si le contenu de la balise "CHEMIN" de notre noeud "MUSIQUE" courant est �gale � celui pass� en param�tre
-            if(current.getChildText("CHEMIN").compareTo(_pathFile) == 0){
-                resultElements.empiler(current.getChild(_researchElement.toUpperCase())); //S�lectionne l'�l�ment de la balise voulue en param�tre
+    public Pile<String> findPath(String _tagName, String _value) {
+        List musicList = root.getChildren(MUSIC_TAG);
+        Iterator i = musicList.iterator();
+        Pile<String> pathList = new Pile();
+        while (i.hasNext()) {
+            Element current = (Element) i.next();
+            // If current contain the specific node with the specific value
+            if (current.getChildText(_tagName).compareTo(_value) == 0) {
+                pathList.pile(current.getChildText(PATH_TAG));
             }
         }
-        //R�cup�ration de l'�l�ment dans la collection d'�l�ment obtenue
-        for(int j=0; j<resultElements.getSize(); j++){
-            elm = resultElements.get(j);
-        }
-        return elm;
+        return pathList;
     }
 
     /**
-     *@param String, String, String
-     *@comment On fait une modification sur un Element
-     * Prend en param�tre l'identifian de l'�l�ment MUSIQUE
-     * c'est � dire la valeur que contienr sa balise REPERTOIRE
-     * Le nom de l'�l�ment enfant recherch�
-     * Et la valeur que doit prendre cet �l�ment
+     * Show the XML
      */
-    static void modifElement(String _pathFile, String _researchElement, String _modif){
-        Element element = elementFilter(_pathFile, _researchElement);//On appel notre m�thode de recherche d'�l�ment
-        element.setText(_modif);//On modifie le texte de l'�l�ment trouv�
-    }
-
-     /**
-      *@param String, String
-      *@return String
-      *@comment Permet de r�cup�rer la valeur d'une balise pr�cise
-      * M�me fonctionnement que la m�thode modifElement
-      * mais retourne la valeur de l'�l�ment au lieu de la modifier
-      */
-    static String readElement(String _pathFile, String _researchElement){
-        Element element = elementFilter(_pathFile, _researchElement);
-        return element.getText();
-    }
-
-     /**
-      *@param String, String
-      *@return Pile<String>
-      *@comment Permet de r�cup�rer une pile des balises correspondantes � celles recherch�es
-      */
-     static Pile<String> pathFilter(String _researchElement, String _valueElement){     
-        List listMusique = racine.getChildren("MUSIQUE");
-        Iterator i = listMusique.iterator();
-        Pile <String>resultElements = new Pile();
-        while(i.hasNext()){
-            Element current = (Element)i.next();
-            //Si le contenu de la balise recherch�e est �gale � la valeur recherch�e
-            if(current.getChildText(_researchElement).compareTo(_valueElement) == 0){
-                resultElements.empiler(current.getChildText("CHEMIN").toString()); //S�lectionne le texte de la balise voulue en param�tre et l'ajoute � la collection
-            }
-        }
-        return resultElements;
-    }
-      /**
-      *@return Pile<String>
-      *@comment Pour r�cup�rer les valeurs de toutes les balises CHEMIN
-      * Retourne une collection de chemin de fichiers
-      */
-     public Pile<String> getAllPath(){
-        Pile<String> allPath = new Pile<String>();
-        List listMusique = racine.getChildren("MUSIQUE");
-        Iterator i = listMusique.iterator();
-        while(i.hasNext()){
-            Element current = (Element)i.next();
-            String currentPath = current.getChildText("CHEMIN");
-            allPath.empiler(currentPath);
-        }
-         return allPath;
-     }
-     
-     /**
-      *@param String
-      *@comment Cette m�thode prend en param�tre la valeur que doit contenir la balise <CHEMIN> du noeud xml � supprimer
-      */
-     public void deleteNode(String _pathFile){
-        Element element = elementFilter(_pathFile, "CHEMIN");//On recherhe l'�l�ment � supprimer
-        Element parentElement = element.getParentElement();//On s�l�ctionne le noeud � supprimer
-        parentElement.getParent().removeContent(parentElement);//On supprime l'�l�ment � partir de l'�l�ment parent et donc l'int�gralit� du noeud
-     }
-
-     /**
-      *@return String
-      *@comment Cette m�thode retourne le contenu de la balise r�pertoire
-      */
-     public String readDirGp() throws Exception{
-        readRoot();//Lis la racine du xml et nous la mets � disposition
-//        System.out.println("racine.getChildText(REPERTOIRE)"+racine.getChildText("REPERTOIRE"));
-        return racine.getChildText("REPERTOIRE");
-     }
-    
-    /*
-     *@comment m�thode d'affichage du xml
-     * Essentiellement utilis�e pour le d�buget la mise en place de l'application
-     */
-    static void show(){
+    public void show() {
         try {
             XMLOutputter sortie = new XMLOutputter(Format.getPrettyFormat());
             sortie.output(document, System.out);
+        } catch (IOException e) {
+            System.out.println("An error occurred while displaying the XML");
         }
-        catch (IOException e){}
+    }
+
+    /**
+     * Set the File
+     *
+     * @param _filePath path of the XML file
+     */
+    public void setFile(String _filePath) {
+        path = _filePath;
+        fileXml = new File(path);
+    }
+
+    /**
+     * Add directory tag in the XML with value
+     *
+     * @param _directoryName Path of the directory (which should contain gp files)
+     */
+    public void addDirectory(String _directoryName) {
+        Element directory = new Element(DIRECTORY_TAG);
+        directory.setText(_directoryName);
+        root.addContent(directory);
+    }
+
+    /**
+     * Add a node to the xml
+     *
+     * @param _path content of the path node (acting like an index for music node)
+     */
+    public void addNode(String _path) {
+        Element music = new Element(MUSIC_TAG);
+        root.addContent(music);
+        music.addContent(new Element(PATH_TAG).setText(_path));
+        music.addContent(new Element(FILE_TAG));
+        music.addContent(new Element(NAME_TAG));
+        music.addContent(new Element(AUTHOR_TAG));
+        music.addContent(new Element(ALBUM_TAG));
+        music.addContent(new Element(DIFFICULTY_TAG));
+        music.addContent(new Element(MASTERY_TAG));
+        music.addContent(new Element(COMMENT_TAG));
+    }
+
+    /**
+     * Save the XML
+     */
+    public void save() {
+        try {
+
+            FileOutputStream fileOutputStream = new FileOutputStream(path);
+            XMLOutputter xmlOutputter = new XMLOutputter(Format.getPrettyFormat());
+            xmlOutputter.output(document, fileOutputStream);
+            fileOutputStream.close();
+        } catch (IOException e) {
+            System.out.println(e.toString());
+        }
+    }
+
+    /**
+     * Return each value contain in node with the given tag name
+     *
+     * @param _tagName Tag name to found
+     * @return Pile<String>
+     */
+    public Pile<String> find(String _tagName) {
+        List musicList = root.getChildren(MUSIC_TAG);
+        Iterator i = musicList.iterator();
+        Pile<String> result = new Pile();
+        while (i.hasNext()) {
+            Element current = (Element) i.next();
+            result.pile(current.getChild(_tagName.toLowerCase()).getText());
+        }
+        return result;
+    }
+
+    /**
+     * Return each value contain in path node
+     *
+     * @return Pile<String>
+     */
+    public Pile<String> getAllPath() {
+        return find(PATH_TAG);
+    }
+
+    /**
+     * Delete a node
+     *
+     * @param _path content of the path node (acting like an index for music node)
+     */
+    public void deleteNode(String _path) {
+        try {
+            Element element = getElement(_path, PATH_TAG);
+            Element parentElement = element.getParentElement();
+            // Move another time to the parent in order to delete our node (can't delete directly on the node)
+            parentElement.getParent().removeContent(parentElement);
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
+    }
+
+    /**
+     * Get value of directory node
+     *
+     * @return String
+     * @throws Exception
+     */
+    public String getDirectory() throws Exception {
+        readRoot();
+        return root.getChildText(DIRECTORY_TAG);
+    }
+
+    /**
+     * Update the XML regarding a new listing of the directory
+     * If there is news files, add them to the XML
+     * If some files are gone, remove them from the XML
+     */
+    public void update() {
+        try {
+            FilesLister filesList = new FilesLister();
+            Pile<String> allPath = getAllPath();
+            Pile<String> newPath = new Pile<String>();
+            Pile<String> newAllPath = filesList.gpLister(getDirectory(), newPath);
+
+            if (newAllPath.getSize() > allPath.getSize()) {
+                for (int i = 0; i < newAllPath.getSize(); i++) {
+                    int verif = 0;
+                    for (int j = 0; j < allPath.getSize(); j++) {
+                        if (newAllPath.get(i).compareTo(allPath.get(j)) == 0) {
+                            verif++;
+                        }
+                    }
+                    if (verif == 0) {
+                        addNode(newAllPath.get(i));
+                    }
+                }
+            } else {
+                for (int i = 0; i < allPath.getSize(); i++) {
+                    int verif = 0;
+                    for (int j = 0; j < newAllPath.getSize(); j++) {
+                        if (newAllPath.get(j).compareTo(allPath.get(i)) == 0) {
+                            verif++;
+                        }
+                    }
+                    if (verif == 0) {
+                        deleteNode(allPath.get(i));
+                    }
+                }
+            }
+            save();
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
+    }
+
+    /**
+     * Load data to the XML
+     * Used for initialization
+     */
+    public void load() {
+        // Initialize file
+        save();
+        try {
+            Pile<String> listPath = new Pile<String>();
+            FilesLister filesList = new FilesLister();
+            listPath = filesList.gpLister(getDirectory(), listPath);
+
+            for (int i = 0; i < listPath.getSize(); i++) {
+                addNode(listPath.get(i));
+            }
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        save();
     }
 }
