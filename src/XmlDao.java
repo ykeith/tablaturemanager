@@ -257,32 +257,38 @@ public class XmlDao {
     public void update() {
         try {
             FilesLister filesList = new FilesLister();
-            Pile<String> allPath = getAllPath();
-            Pile<String> newPath = new Pile<String>();
-            Pile<String> newAllPath = filesList.gpLister(getDirectory(), newPath);
+            Pile<String> knownPathList = getAllPath();
+            Pile<String> scannedPathList = filesList.gpLister(getDirectory(), new Pile<String>());
 
-            if (newAllPath.getSize() > allPath.getSize()) {
-                for (int i = 0; i < newAllPath.getSize(); i++) {
+            if (!scannedPathList.equals(knownPathList)) {
+                // Loop to find every added in scanned list
+                for (int i = 0; i < scannedPathList.getSize(); i++) {
                     int occurrence = 0;
-                    for (int j = 0; j < allPath.getSize(); j++) {
-                        if (newAllPath.get(i).compareTo(allPath.get(j)) == 0) {
+                    for (int j = 0; j < knownPathList.getSize(); j++) {
+                        // Try to find similar path in both lists
+                        if (scannedPathList.get(i).compareTo(knownPathList.get(j)) == 0) {
                             occurrence++;
+                            // After find it don't need to continue (Thanks Fabrice)
+                            break;
                         }
                     }
+                    // If no path correspond to scanned paths, add it to the XML
                     if (occurrence == 0) {
-                        addNode(newAllPath.get(i));
+                        addNode(scannedPathList.get(i));
                     }
                 }
-            } else {
-                for (int i = 0; i < allPath.getSize(); i++) {
+                // Loop another time to get every removed from known list
+                for (int i = 0; i < knownPathList.getSize(); i++) {
                     int occurrence = 0;
-                    for (int j = 0; j < newAllPath.getSize(); j++) {
-                        if (newAllPath.get(j).compareTo(allPath.get(i)) == 0) {
+                    for (int j = 0; j < scannedPathList.getSize(); j++) {
+                        if (scannedPathList.get(j).compareTo(knownPathList.get(i)) == 0) {
                             occurrence++;
+                            break;
                         }
                     }
+                    // If no path correspond to scanned paths, remove it from the XML
                     if (occurrence == 0) {
-                        deleteNode(allPath.get(i));
+                        deleteNode(knownPathList.get(i));
                     }
                 }
             }
