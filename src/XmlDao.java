@@ -11,9 +11,9 @@ import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
 /**
- * Handle XML file
+ * Manage data contained in XML file
  */
-public class Xml {
+public class XmlDao {
 
     /**
      * Path of the XML file
@@ -21,7 +21,7 @@ public class Xml {
     private String path;
     private Element root;
     private Document document;
-    private File fileXml;
+    private File file;
 
     public static final String ROOT_TAG = "files";
     public static final String DIRECTORY_TAG = "directory";
@@ -38,7 +38,7 @@ public class Xml {
     /**
      * Constructor
      */
-    public Xml() {
+    public XmlDao() {
         root = new Element(ROOT_TAG);
         document = new Document(root);
     }
@@ -62,8 +62,8 @@ public class Xml {
      * @return Element
      */
     private Element getElement(String _pathNode, String _tagName) throws Exception {
-        List listMusique = root.getChildren(MUSIC_TAG);
-        Iterator i = listMusique.iterator();
+        List musicList = root.getChildren(MUSIC_TAG);
+        Iterator i = musicList.iterator();
         while (i.hasNext()) {
             Element current = (Element) i.next();
             // Found by index (path node)
@@ -149,7 +149,7 @@ public class Xml {
      */
     public void setFile(String _filePath) {
         path = _filePath;
-        fileXml = new File(path);
+        file = new File(path);
     }
 
     /**
@@ -263,25 +263,25 @@ public class Xml {
 
             if (newAllPath.getSize() > allPath.getSize()) {
                 for (int i = 0; i < newAllPath.getSize(); i++) {
-                    int verif = 0;
+                    int occurrence = 0;
                     for (int j = 0; j < allPath.getSize(); j++) {
                         if (newAllPath.get(i).compareTo(allPath.get(j)) == 0) {
-                            verif++;
+                            occurrence++;
                         }
                     }
-                    if (verif == 0) {
+                    if (occurrence == 0) {
                         addNode(newAllPath.get(i));
                     }
                 }
             } else {
                 for (int i = 0; i < allPath.getSize(); i++) {
-                    int verif = 0;
+                    int occurrence = 0;
                     for (int j = 0; j < newAllPath.getSize(); j++) {
                         if (newAllPath.get(j).compareTo(allPath.get(i)) == 0) {
-                            verif++;
+                            occurrence++;
                         }
                     }
-                    if (verif == 0) {
+                    if (occurrence == 0) {
                         deleteNode(allPath.get(i));
                     }
                 }

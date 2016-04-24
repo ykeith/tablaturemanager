@@ -18,7 +18,7 @@ public class MainForm extends javax.swing.JFrame {
      * Path to the HTML help page
      */
     private String pathHtml;
-    private Xml xml = new Xml();
+    private XmlDao xml = new XmlDao();
     private final String SELECT_STRING = "Select";
 
     /**
@@ -96,20 +96,20 @@ public class MainForm extends javax.swing.JFrame {
      * Separate method from others combos (not always updated)
      */
     private void pathComboUpdate() {
-        comboUpdate(pathComboBox, Xml.PATH_TAG);
+        comboUpdate(pathComboBox, XmlDao.PATH_TAG);
     }
 
     /**
      * Update combo boxes
      */
     private void comboBoxesUpdate() {
-        comboUpdate(fileComboBox, Xml.FILE_TAG);
-        comboUpdate(nameComboBox, Xml.NAME_TAG);
-        comboUpdate(authorComboBox, Xml.AUTHOR_TAG);
-        comboUpdate(albumComboBox, Xml.ALBUM_TAG);
-        comboUpdate(difficultyComboBox, Xml.DIFFICULTY_TAG);
-        comboUpdate(masteryComboBox, Xml.MASTERY_TAG);
-        comboUpdate(commentComboBox, Xml.COMMENT_TAG);
+        comboUpdate(fileComboBox, XmlDao.FILE_TAG);
+        comboUpdate(nameComboBox, XmlDao.NAME_TAG);
+        comboUpdate(authorComboBox, XmlDao.AUTHOR_TAG);
+        comboUpdate(albumComboBox, XmlDao.ALBUM_TAG);
+        comboUpdate(difficultyComboBox, XmlDao.DIFFICULTY_TAG);
+        comboUpdate(masteryComboBox, XmlDao.MASTERY_TAG);
+        comboUpdate(commentComboBox, XmlDao.COMMENT_TAG);
     }
 
     /**
@@ -122,13 +122,13 @@ public class MainForm extends javax.swing.JFrame {
         // Labels
         String ok_string = "Ok";
         String cancel_string = "Cancel";
-        String file_string = Xml.FILE_TAG;
-        String name_string = Xml.NAME_TAG;
-        String author_string = Xml.AUTHOR_TAG;
-        String album_string = Xml.ALBUM_TAG;
-        String difficulty_string = Xml.DIFFICULTY_TAG;
-        String mastery_string = Xml.MASTERY_TAG;
-        String comment_string = Xml.COMMENT_TAG;
+        String file_string = XmlDao.FILE_TAG;
+        String name_string = XmlDao.NAME_TAG;
+        String author_string = XmlDao.AUTHOR_TAG;
+        String album_string = XmlDao.ALBUM_TAG;
+        String difficulty_string = XmlDao.DIFFICULTY_TAG;
+        String mastery_string = XmlDao.MASTERY_TAG;
+        String comment_string = XmlDao.COMMENT_TAG;
 
         modificationFrame = new javax.swing.JFrame();
         jLabel9 = new javax.swing.JLabel();
@@ -195,7 +195,7 @@ public class MainForm extends javax.swing.JFrame {
 
         modificationFrame.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         modificationFrame.setResizable(false);
-        jLabel9.setText(Xml.NAME_TAG);
+        jLabel9.setText(XmlDao.NAME_TAG);
 
         nameTextField.setText("nameTextField");
         nameTextField.setMaximumSize(new java.awt.Dimension(6, 20));
@@ -756,13 +756,13 @@ public class MainForm extends javax.swing.JFrame {
     private void menuViewActionPerformed(java.awt.event.ActionEvent evt) {
         // If something have been selected in pathComboBox
         if (pathComboBox.getSelectedItem().toString().compareTo(SELECT_STRING) != 0) {
-            pathLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.PATH_TAG));
-            nameLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.NAME_TAG));
-            authorLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.AUTHOR_TAG));
-            albumLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.ALBUM_TAG));
-            difficultyLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.DIFFICULTY_TAG));
-            masteryLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.MASTERY_TAG));
-            commentLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.COMMENT_TAG));
+            pathLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.PATH_TAG));
+            nameLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.NAME_TAG));
+            authorLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.AUTHOR_TAG));
+            albumLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.ALBUM_TAG));
+            difficultyLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.DIFFICULTY_TAG));
+            masteryLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.MASTERY_TAG));
+            commentLabel.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.COMMENT_TAG));
             viewFrame.setSize(700, 500);
             viewFrame.setVisible(true);
         }
@@ -798,12 +798,12 @@ public class MainForm extends javax.swing.JFrame {
 
     private void modifyButtonActionPerformed(java.awt.event.ActionEvent evt) {
         // TODO handle update in xml class
-        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.NAME_TAG, nameTextField.getText());
-        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.AUTHOR_TAG, authorTextField.getText());
-        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.ALBUM_TAG, albumTextField.getText());
-        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.DIFFICULTY_TAG, difficultyTextField.getText());
-        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.MASTERY_TAG, masteryTextField.getText());
-        xml.setElementValue(pathComboBox.getSelectedItem().toString(), Xml.COMMENT_TAG, commentTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), XmlDao.NAME_TAG, nameTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), XmlDao.AUTHOR_TAG, authorTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), XmlDao.ALBUM_TAG, albumTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), XmlDao.DIFFICULTY_TAG, difficultyTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), XmlDao.MASTERY_TAG, masteryTextField.getText());
+        xml.setElementValue(pathComboBox.getSelectedItem().toString(), XmlDao.COMMENT_TAG, commentTextField.getText());
         xml.save();
         comboBoxesUpdate();
         modificationFrame.dispose();
@@ -814,12 +814,12 @@ public class MainForm extends javax.swing.JFrame {
 
     private void modificationMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {
         if (pathComboBox.getSelectedItem().toString().compareTo(SELECT_STRING) != 0) {
-            nameTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.NAME_TAG));
-            authorTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.AUTHOR_TAG));
-            albumTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.ALBUM_TAG));
-            difficultyTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.DIFFICULTY_TAG));
-            masteryTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.MASTERY_TAG));
-            commentTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), Xml.COMMENT_TAG));
+            nameTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.NAME_TAG));
+            authorTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.AUTHOR_TAG));
+            albumTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.ALBUM_TAG));
+            difficultyTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.DIFFICULTY_TAG));
+            masteryTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.MASTERY_TAG));
+            commentTextField.setText(xml.readElement(pathComboBox.getSelectedItem().toString(), XmlDao.COMMENT_TAG));
             modificationFrame.setSize(400, 400);
             modificationFrame.setVisible(true);
         }
@@ -855,27 +855,27 @@ public class MainForm extends javax.swing.JFrame {
     }
 
     private void commentComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
-        comboBoxAction(commentComboBox, Xml.COMMENT_TAG);
+        comboBoxAction(commentComboBox, XmlDao.COMMENT_TAG);
     }
 
     private void masteryComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
-        comboBoxAction(masteryComboBox, Xml.MASTERY_TAG);
+        comboBoxAction(masteryComboBox, XmlDao.MASTERY_TAG);
     }
 
     private void difficultyComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
-        comboBoxAction(difficultyComboBox, Xml.DIFFICULTY_TAG);
+        comboBoxAction(difficultyComboBox, XmlDao.DIFFICULTY_TAG);
     }
 
     private void albumComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
-        comboBoxAction(albumComboBox, Xml.ALBUM_TAG);
+        comboBoxAction(albumComboBox, XmlDao.ALBUM_TAG);
     }
 
     private void authorComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
-        comboBoxAction(authorComboBox, Xml.AUTHOR_TAG);
+        comboBoxAction(authorComboBox, XmlDao.AUTHOR_TAG);
     }
 
     private void nameComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
-        comboBoxAction(nameComboBox, Xml.NAME_TAG);
+        comboBoxAction(nameComboBox, XmlDao.NAME_TAG);
     }
 
     private void fileComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
